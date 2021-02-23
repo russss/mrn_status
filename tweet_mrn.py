@@ -78,6 +78,7 @@ class TweetMRN(Bot):
 
     def mark_tweeted_window(self, window):
         self.state["seen_windows"][window.hail_start] = window.id
+        self.save_state()
 
     def should_tweet_downlink(self, downlink):
         to_delete = []
@@ -95,6 +96,7 @@ class TweetMRN(Bot):
 
     def mark_tweeted_downlink(self, downlink):
         self.state["seen_downlinks"][downlink.start_time] = downlink.id
+        self.save_state()
 
     def update_data(self):
         self.log.debug("Updating data")
