@@ -44,7 +44,9 @@ class TweetMRN(Bot):
             tweet += " ⟷ "
         tweet += orbiter_names.get(window.orbiter, window.orbiter)
         tweet += "\n"
-        tweet += f"Expected data: {window.request_volume_returned:.0f} MB in "
+
+        size_mbytes = round(window.request_volume_returned / 8)
+        tweet += f"Expected data: {size_mbytes:.0f} MB in "
         tweet += (
             str(round((window.pass_end - window.pass_start).total_seconds() / 60))
             + " minutes\n"
