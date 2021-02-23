@@ -55,7 +55,7 @@ class UplinkWindow:
             request_forward_rate=parse(data["REQUESTFORWARDLINKDATARATE"], int),
             request_return_rate=parse(data["REQUESTRETURNLINKDATARATE"], int),
             request_volume_returned=parse(data["REQUESTDATAVOLUMERETURNED"], float),
-            request_adr=data['REQUESTADR_ENABLE_FLAG']=="ADR_ON"
+            request_adr=data['REQUESTADR_ENABLE_FLAG'] not in ("ADR_OFF", "")
         )
 
 
