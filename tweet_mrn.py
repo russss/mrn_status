@@ -41,7 +41,7 @@ class TweetMRN(Bot):
         elif window.link_type == "return":
             tweet += " → "
         else:
-            tweet += " ⟷  "
+            tweet += " ⟷ "
         tweet += orbiter_names.get(window.orbiter, window.orbiter)
         tweet += "\n"
         tweet += f"Expected data: {window.request_volume_returned:.0f} MB in "
