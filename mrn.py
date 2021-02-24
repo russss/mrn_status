@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 
 def convert_date(datetimestr):
-    if datetimestr == "":
+    if datetimestr == "" or datetimestr == "NULL":
         return None
     datestr, timestr = datetimestr.split("T")
     year, daynum = datestr.split("-")
@@ -17,7 +17,7 @@ def convert_date(datetimestr):
 
 
 def parse(val, typ):
-    if val == "":
+    if val == "" or val == "NULL":
         return None
     return typ(val)
 
@@ -36,9 +36,9 @@ class UplinkWindow:
 
     link_type: str
 
-    request_forward_rate: int
-    request_return_rate: int
-    request_volume_returned: float
+    request_forward_rate: int  # bits
+    request_return_rate: int  # bits
+    request_volume_returned: float  # bits
     request_adr: bool
 
     @classmethod
@@ -55,13 +55,14 @@ class UplinkWindow:
             request_forward_rate=parse(data["REQUESTFORWARDLINKDATARATE"], int),
             request_return_rate=parse(data["REQUESTRETURNLINKDATARATE"], int),
             request_volume_returned=parse(data["REQUESTDATAVOLUMERETURNED"], float),
-            request_adr=data['REQUESTADR_ENABLE_FLAG'] not in ("ADR_OFF", "")
+            request_adr=data["REQUESTADR_ENABLE_FLAG"] not in ("ADR_OFF", ""),
         )
 
 
 @dataclass
 class Downlink:
     id: str
+    overflight_id: str
     orbiter: str
     lander: str
 
@@ -73,10 +74,32 @@ class Downlink:
     @classmethod
     def from_json(cls, data):
         return cls(
-            id=data['OVERFLIGHTID'],
-            orbiter=data['SPACECRAFTORBITER'],
-            lander=data['SPACECRAFTLANDER'],
-            start_time=convert_date(data['STARTTIME']),
-            end_time=convert_date(data['ENDTIME']),
-            bits=parse(data['BITS'], int)
+            id=data["OVERFLIGHTID"] + data["STARTTIME"],
+            overflight_id=data["OVERFLIGHTID"],
+            orbiter=data["SPACECRAFTORBITER"],
+            lander=data["SPACECRAFTLANDER"],
+            start_time=convert_date(data["STARTTIME"]),
+            end_time=convert_date(data["ENDTIME"]),
+            bits=parse(data["BITS"], int),
+        )
+
+
+@dataclass
+class OrbiterEvent:
+    orbiter: str
+    type: str
+    start_time: datetime
+    end_time: datetime
+    receiver: str
+    data_rate: int  # bits/s
+
+    @classmethod
+    def from_json(cls, data):
+        return cls(
+            orbiter=data["SPACECRAFTORBITER"],
+            type=data["EVENTTYPE"],
+            start_time=convert_date(data["STARTTIME"]),
+            end_time=convert_date(data["ENDTIME"]),
+            receiver=parse(data['DSS'], str),
+            data_rate=parse(data['DATARATE'], int)
         )
