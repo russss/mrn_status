@@ -1,3 +1,4 @@
+import requests
 from datetime import datetime, timedelta, date
 from dataclasses import dataclass
 
@@ -20,6 +21,10 @@ def parse(val, typ):
     if val == "" or val == "NULL":
         return None
     return typ(val)
+
+
+class FetchException(Exception):
+    pass
 
 
 @dataclass
@@ -58,6 +63,17 @@ class UplinkWindow:
             request_adr=data["REQUESTADR_ENABLE_FLAG"] not in ("ADR_OFF", ""),
         )
 
+    @classmethod
+    def fetch(cls):
+        res = requests.get(
+            "https://mars.nasa.gov/rss/api/?feed=marsrelay&category=all&feedtype=json"
+        )
+        if res.status_code != 200:
+            raise FetchException(res.status_code)
+
+        data = res.json()
+        return [cls.from_json(row) for row in data["marsRelay"]]
+
 
 @dataclass
 class Downlink:
@@ -83,6 +99,17 @@ class Downlink:
             bits=parse(data["BITS"], int),
         )
 
+    @classmethod
+    def fetch(cls):
+        res = requests.get(
+            "https://mars.nasa.gov/rss/api/?feed=marsrelay_db&category=all&feedtype=json"
+        )
+        if res.status_code != 200:
+            raise FetchException(res.status_code)
+
+        data = res.json()
+        return [cls.from_json(row) for row in data["DownlinkBuffer"]]
+
 
 @dataclass
 class OrbiterEvent:
@@ -100,6 +127,17 @@ class OrbiterEvent:
             type=data["EVENTTYPE"],
             start_time=convert_date(data["STARTTIME"]),
             end_time=convert_date(data["ENDTIME"]),
-            receiver=parse(data['DSS'], str),
-            data_rate=parse(data['DATARATE'], int)
+            receiver=parse(data["DSS"], str),
+            data_rate=parse(data["DATARATE"], int),
         )
+
+    @classmethod
+    def fetch(cls):
+        res = requests.get(
+            "https://mars.nasa.gov/rss/api/?feed=marsrelay_oe&category=all&feedtype=json"
+        )
+        if res.status_code != 200:
+            raise FetchException(res.status_code)
+
+        data = res.json()
+        return [cls.from_json(row) for row in data["orbiterEvent"]]

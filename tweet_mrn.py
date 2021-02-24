@@ -3,7 +3,7 @@ from datetime import timedelta, datetime
 from polybot import Bot
 from time import sleep
 
-from mrn import UplinkWindow, Downlink
+from mrn import UplinkWindow, Downlink, FetchException, OrbiterEvent
 
 # Interesting data:
 # https://mars.nasa.gov/rss/api/?feed=marsrelay&category=all&feedtype=json
@@ -102,23 +102,21 @@ class TweetMRN(Bot):
 
     def update_data(self):
         self.log.debug("Updating data")
-        res = requests.get(
-            "https://mars.nasa.gov/rss/api/?feed=marsrelay&category=all&feedtype=json"
-        )
 
-        if res.status_code == 200:
-            self.data = res.json()
-        else:
-            self.log.warn("Error %s reading marsrelay data feed", res.status_code)
+        try:
+            self.windows = UplinkWindow.fetch()
+        except FetchException:
+            self.log.warn("Error reading marsrelay data feed")
 
-        res = requests.get(
-            "https://mars.nasa.gov/rss/api/?feed=marsrelay_db&category=all&feedtype=json"
-        )
+        try:
+            self.downlinks = Downlink.fetch()
+        except FetchException:
+            self.log.warn("Error reading downlink data feed")
 
-        if res.status_code == 200:
-            self.downlink_data = res.json()
-        else:
-            self.log.warn("Error %s reading marsrelay_db data feed", res.status_code)
+        try:
+            self.orbiter_events = OrbiterEvent.fetch()
+        except FetchException:
+            self.log.warn("Error reading orbiter event data feed")
 
     def poll(self):
         if not self.last_update or self.last_update < datetime.now() - timedelta(
@@ -127,8 +125,7 @@ class TweetMRN(Bot):
             self.update_data()
             self.last_update = datetime.now()
 
-        for window_data in self.data["marsRelay"]:
-            window = UplinkWindow.from_json(window_data)
+        for window in self.windows:
             if (
                 window.link_type != ""
                 and window.hail_end > datetime.now()
@@ -138,8 +135,7 @@ class TweetMRN(Bot):
                 self.tweet_window(window)
                 self.mark_tweeted_window(window)
 
-        for downlink_data in self.downlink_data["DownlinkBuffer"]:
-            downlink = Downlink.from_json(downlink_data)
+        for downlink in self.downlinks:
             if (
                 downlink.end_time > datetime.now()
                 and downlink.start_time < datetime.now()
