@@ -118,9 +118,9 @@ class TweetMRN(Bot):
             tweet += "\nData rate: "
             rate = drs[0].data_rate / 1024
             if rate > 1024:
-                tweet += f"{round(rate / 1024, 1)} Mb/s"
+                tweet += f"{round(rate / 1024, 1)} Mbps"
             else:
-                tweet += f"{round(rate)} kb/s"
+                tweet += f"{round(rate)} kbps"
 
         self.post(tweet)
 
