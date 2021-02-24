@@ -1,4 +1,4 @@
-import requests
+import re
 from datetime import timedelta, datetime
 from polybot import Bot
 from time import sleep
@@ -21,6 +21,24 @@ orbiter_names = {
 }
 
 lander_names = {"M20": "Perseverance", "NSY": "InSight", "MSL": "Curiosity"}
+
+receiver_names = {
+    "MLG": "Malargüe (ESA)",
+    "NNO": "New Norcia (ESA)",
+    "CEB": "Cebreros (ESA)",
+    "KLZ": "Kalyazin (Roscosmos)",
+}
+
+
+def format_receiver(receiver):
+    if receiver.startswith("DSS-"):
+        return receiver
+    elif re.match(r"^[0-9]+$", receiver):
+        return "DSS-" + receiver
+    elif receiver in receiver_names:
+        return receiver_names[receiver]
+    else:
+        return receiver
 
 
 class TweetMRN(Bot):
@@ -56,12 +74,54 @@ class TweetMRN(Bot):
             tweet += " (adaptive)"
         self.post(tweet)
 
+    def get_orbiter_events(self, orbiter, time):
+        events = sorted(
+            [
+                e
+                for e in self.orbiter_events
+                if e.orbiter == orbiter
+                and e.start_time <= time
+                and (e.end_time is None or e.end_time > time)
+            ],
+            key=lambda e: e.start_time,
+        )
+
+        ret = [e for e in events if e.type != "DataRate"]
+        # DataRate events don't have an end_time, so take the most recent one only
+        dr = [e for e in events if e.type == "DataRate"]
+        if len(dr) > 0:
+            ret += [dr[-1]]
+        return ret
+
     def tweet_downlink(self, downlink):
+        if downlink.bits < 100000:
+            return
+
+        events = self.get_orbiter_events(downlink.orbiter, downlink.start_time)
         tweet = orbiter_names.get(downlink.orbiter, downlink.orbiter)
         tweet += " downlinking "
-        tweet += str(round(downlink.bits / 8 / 1024 / 1024)) + " MB"
+        tweet += str(round(downlink.bits / 8 / 1024 / 1024, 2)) + " MB"
         tweet += " from " + lander_names.get(downlink.lander, downlink.lander)
         tweet += " to Earth"
+
+        tracks = [e for e in events if e.type == "DSNTrack"]
+        if len(tracks) > 0:
+            tweet += "\n"
+            if len(tracks) == 1:
+                tweet += "Ground station: "
+            else:
+                tweet += "Ground stations: "
+            tweet += ", ".join(format_receiver(track.receiver) for track in tracks)
+
+        drs = [e for e in events if e.type == "DataRate"]
+        if len(drs) > 0:
+            tweet += "\nData rate: "
+            rate = drs[0].data_rate / 1024
+            if rate > 1024:
+                tweet += f"{round(rate / 1024, 1)} Mb/s"
+            else:
+                tweet += f"{round(rate)} kb/s"
+
         self.post(tweet)
 
     def should_tweet_window(self, window):
