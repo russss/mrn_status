@@ -69,7 +69,7 @@ class TweetMRN(Bot):
             str(round((window.pass_end - window.pass_start).total_seconds() / 60))
             + " minutes\n"
         )
-        tweet += f"Configured bitrate: {window.request_forward_rate}/{window.request_return_rate} kbps"
+        tweet += f"Configured data rate: {window.request_forward_rate}/{window.request_return_rate} kbps"
         if window.request_adr:
             tweet += " (adaptive)"
         self.post(tweet)
