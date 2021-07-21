@@ -27,6 +27,7 @@ receiver_names = {
     "NNO": "New Norcia (ESA)",
     "CEB": "Cebreros (ESA)",
     "KLZ": "Kalyazin (Roscosmos)",
+    "BLK": "Bear Lakes (Roscosmos)"
 }
 
 
