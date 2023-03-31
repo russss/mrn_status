@@ -128,7 +128,7 @@ class OrbiterEvent:
             start_time=convert_date(data["STARTTIME"]),
             end_time=convert_date(data["ENDTIME"]),
             receiver=parse(data["DSS"], str),
-            data_rate=parse(data["DATARATE"], int),
+            data_rate=parse(data["DATARATE"], float),
         )
 
     @classmethod
