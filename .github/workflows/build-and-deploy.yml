@@ -4,7 +4,7 @@ on:
   push:
 
 env:
-  IMAGE_NAME: mrn_status
+  IMAGE_NAME: ghcr.io/russss/mrn_status
 
 jobs:
   build:
